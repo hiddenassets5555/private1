@@ -1,0 +1,90 @@
+local Players = game:GetService("Players")
+local lp = Players.LocalPlayer
+
+local roleMap = {
+    ["Security Department"] = "Foundation",
+    ["Mobile Task Force"] = "Foundation",
+    ["Scientific Department"] = "Foundation",
+    ["Medical Department"] = "Foundation",
+    ["Rapid Response Team"] = "Foundation",
+    ["Internal Security Department"] = "Foundation",
+    ["Intelligence Agency"] = "Foundation",
+    ["Administrative Department"] = "Foundation",
+    ["Class - D"] = "ClassD",
+    ["Chaos Insurgency"] = "Chaos",
+    ["SCP"] = "SCP"
+}
+
+local roleColors = {
+    Foundation = {
+        ["Security Department"] = Color3.fromRGB(128, 128, 128),         -- Grey
+        ["Mobile Task Force"] = Color3.fromRGB(0, 145, 255),            -- Blue
+        ["Scientific Department"] = Color3.fromRGB(255, 255, 255),      -- White
+        ["Medical Department"] = Color3.fromRGB(100, 200, 255),         -- Light Blue
+        ["Rapid Response Team"] = Color3.fromRGB(100, 200, 255),        -- Light Blue
+        ["Internal Security Department"] = Color3.fromRGB(50, 50, 50),  -- Dark Grey
+        ["Intelligence Agency"] = Color3.fromRGB(50, 50, 50),           -- Dark Grey
+        ["Administrative Department"] = Color3.fromRGB(50, 50, 50)      -- Dark Grey
+    },
+    ClassD = Color3.fromRGB(255, 120, 0),      -- Orange
+    Chaos = Color3.fromRGB(0, 100, 0),         -- Dark Green
+    SCP = Color3.fromRGB(255, 0, 0)            -- Red
+}
+
+local function getColor(plr)
+    local teamName = plr.Team and plr.Team.Name
+    if not teamName then return end
+
+    local role = roleMap[teamName]
+    if not role then return end
+
+    if role == "Foundation" then
+        return roleColors.Foundation[teamName]
+    else
+        return roleColors[role]
+    end
+end
+
+local function createHighlight(char, color)
+    if not char or not char.Parent then return end
+
+    local existing = char:FindFirstChild("WaveESP")
+    if existing then existing:Destroy() end
+
+    local hl = Instance.new("Highlight")
+    hl.Name = "WaveESP"
+    hl.Adornee = char
+    hl.FillTransparency = 1
+    hl.OutlineTransparency = 0
+    hl.OutlineColor = color
+    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    hl.Parent = char
+end
+
+local function applyHighlight(plr)
+    if plr == lp then return end
+    local function onCharacter(char)
+        repeat task.wait() until char and char.Parent and char:FindFirstChild("HumanoidRootPart")
+        local color = getColor(plr)
+        if color then
+            createHighlight(char, color)
+        else
+            -- Attempt fallback for Chaos or SCP if team not set properly
+            local lname = plr.Name:lower()
+            if lname:find("chaos") then
+                createHighlight(char, roleColors.Chaos)
+            elseif lname:find("scp") then
+                createHighlight(char, roleColors.SCP)
+            end
+        end
+    end
+
+    plr.CharacterAdded:Connect(onCharacter)
+    if plr.Character then onCharacter(plr.Character) end
+end
+
+for _, plr in ipairs(Players:GetPlayers()) do
+    applyHighlight(plr)
+end
+
+Players.PlayerAdded:Connect(applyHighlight)
